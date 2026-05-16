@@ -211,6 +211,8 @@ Integrierte Module: Die Aggregation der am häufigsten genutzten Tags im Statist
 
 ## Week 3
 
+### Day 7
+
 #### 1. ✅ What did I accomplish?
 - **Konzepte:** Das Client-Server-Modell und die Entkopplung von Backend (FastAPI REST-API) und Frontend (Benutzeroberfläche) in einer realen Systemarchitektur verstanden. Die Kommunikation erfolgt sauber über asynchrone HTTP-Requests mittels der `requests`-Bibliothek.
 - **UI-Entwicklung mit Streamlit:** Das Streamlit-Framework erlernt und genutzt, um schnell und effizient reaktive Web-Applikationen direkt in Python zu bauen.
