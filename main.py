@@ -1,8 +1,9 @@
 from fastapi import FastAPI, HTTPException, Response, Depends
-from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict, EmailStr
 from datetime import datetime
 import re
 from typing import Optional, Annotated
+from collections import Counter
 from sqlmodel import SQLModel, Field as SQLField, Session, create_engine, Relationship, or_, select, col
 
 # =========================================================================
@@ -10,36 +11,46 @@ from sqlmodel import SQLModel, Field as SQLField, Session, create_engine, Relati
 # =========================================================================
 
 class NoteTag(SQLModel, table=True):
-    # Verknuepft Notizen und Tags miteinander (n:m Beziehung)
+    """
+    Verknuepft Notizen und Tags miteinander (n:m Beziehung ueber eine Zwischentabelle).
+    Anforderung aus Tag 3/4.
+    """
     __tablename__ = "note_tag"
     note_id: Optional[int] = SQLField(default=None, foreign_key="notes.id", primary_key=True)
     tag_id: Optional[int] = SQLField(default=None, foreign_key="tags.id", primary_key=True)
 
 
 class Note(SQLModel, table=True):
-    # Repraesentiert eine Notiz in der Datenbank
+    """
+    Repraesentiert eine Notiz in der persistenten SQLite-Datenbank.
+    Enthaelt alle erweiterten Felder bis Tag 7 (priority, author_email).
+    """
     __tablename__ = 'notes'
     id: Optional[int] = SQLField(default=None, primary_key=True)
     title: str
     content: str
     category: str
+    priority: int = SQLField(default=3)  # Prioritaet von 1 bis 5 (Tag 5 Stretch Goal)
+    author_email: Optional[str] = SQLField(default=None)  # E-Mail-Adresse des Autors (Tag 5 Stretch Goal)
     created_at: datetime = SQLField(default_factory=datetime.now)
     
-    # Eine Notiz kann mehrere Tags haben
+    # Beziehung zu den Tags mit automatischer Verknuepfung
     tags: list["Tag"] = Relationship(back_populates="notes", link_model=NoteTag)
 
 
 class Tag(SQLModel, table=True):
-    # Repraesentiert einen Tag in der Datenbank
+    """
+    Repraesentiert einen dynamischen Tag in der Datenbank.
+    """
     __tablename__ = 'tags'
     id: Optional[int] = SQLField(default=None, primary_key=True)
     name: str = SQLField(unique=True, index=True)
     
-    # Ein Tag kann mit mehreren Notizen verknuepft sein
+    # Inverse Beziehung zu den Notizen
     notes: list[Note] = Relationship(back_populates="tags", link_model=NoteTag)
 
 
-# Datenbankverbindung herstellen und Tabellen generieren
+# Erstellung der lokalen SQLite-Datenbankdatei (notes.db)
 engine = create_engine("sqlite:///notes.db", connect_args={"check_same_thread": False})
 SQLModel.metadata.create_all(engine)
 
@@ -48,7 +59,11 @@ SQLModel.metadata.create_all(engine)
 # =========================================================================
 
 def validate_and_normalize_tag(tag_name: str) -> str:
-    # Validiert den Tag-Namen und bereinigt ihn (Whitespace, Kleinschreibung, Regex)
+    """
+    Validiert und normalisiert Tag-Namen nach den strikten Vorgaben aus Tag 5:
+    - Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt
+    - Laenge zwischen 2 und 30 Zeichen
+    """
     if not isinstance(tag_name, str):
         raise ValueError("tag name must be a string")
     
@@ -65,7 +80,9 @@ def validate_and_normalize_tag(tag_name: str) -> str:
 
 
 def get_session():
-    # Erstellt fuer jeden Request eine neue Datenbank-Session
+    """
+    Erstellt eine isolierte Datenbank-Session fuer jeden eingehenden HTTP-Request.
+    """
     with Session(engine) as session:
         yield session
 
@@ -73,7 +90,9 @@ SessionDep = Annotated[Session, Depends(get_session)]
 
 
 def parse_iso_datetime(value: Optional[str], param_name: str) -> Optional[datetime]:
-    # Konvertiert einen ISO-Datumsstring in ein Python-datetime-Objekt
+    """
+    Konvertiert ISO 8601 Datumsstrings fuer die Filter-Endpunkte robust in datetime-Objekte.
+    """
     if value is None:
         return None
     try:
@@ -86,31 +105,37 @@ def parse_iso_datetime(value: Optional[str], param_name: str) -> Optional[dateti
         )
 
 # =========================================================================
-# 📋 PYDANTIC API-SCHEMATA (Eingabe / Ausgabe)
+# 📋 PYDANTIC API-SCHEMATA (Strikte Validierung nach Tag 5)
 # =========================================================================
 
 class NoteCreate(BaseModel):
-    # Schema fuer das Erstellen einer neuen Notiz
+    """
+    Schema fuer die Validierung von POST- und PUT-Requests.
+    Verhindert unangekuendigte Felder via extra='forbid' (Anforderung Tag 5).
+    """
     title: str = Field(min_length=3, max_length=100)
     content: str = Field(min_length=1, max_length=10000)
     category: str = Field(min_length=2, max_length=30)
+    priority: int = Field(default=3, ge=1, le=5)  # Validierung: Bereich 1-5
+    author_email: Optional[EmailStr] = Field(default=None)  # Automatische E-Mail-Validierung
     tags: list[str] = Field(default_factory=list, max_length=10)
     
     model_config = ConfigDict(
-        str_strip_whitespace=True,
-        extra="forbid"
+        str_strip_whitespace=True,  # Automatische Bereinigung von Leerzeichen
+        extra="forbid"              # Striktes Ablehnen unbekannter JSON-Felder
     )
     
     @field_validator("tags", mode="before")
     @classmethod
     def validate_tags(cls, v):
-        # Validiert und dedupliziert die uebergebenen Tags
+        """
+        Dedupliziert und bereinigt eingehende Tags vor der Speicherung (Tag 5).
+        """
         if not isinstance(v, list):
             raise ValueError("tags must be a list")
         
         validated_tags = []
         seen = set()
-        
         for tag in v:
             if not isinstance(tag, str):
                 raise ValueError("each tag must be a string")
@@ -121,15 +146,27 @@ class NoteCreate(BaseModel):
                     seen.add(tag_normalized)
             except ValueError as e:
                 raise ValueError(f"Invalid tag '{tag}': {str(e)}")
-                
         return validated_tags
+
+    @field_validator("category")
+    @classmethod
+    def normalize_category(cls, v: str) -> str:
+        """
+        Normalisiert die Kategorie automatisch in Kleinschreibung (Tag 5).
+        """
+        return v.strip().lower()
 
 
 class NoteUpdate(BaseModel):
-    # Schema fuer die partielle Aktualisierung (PATCH) einer Notiz
+    """
+    Schema fuer partielle Aktualisierungen (PATCH-Requests).
+    Alle Felder sind optional.
+    """
     title: Optional[str] = Field(None, min_length=3, max_length=100)
     content: Optional[str] = Field(None, min_length=1, max_length=10000)
     category: Optional[str] = Field(None, min_length=2, max_length=30)
+    priority: Optional[int] = Field(None, ge=1, le=5)
+    author_email: Optional[EmailStr] = Field(None)
     tags: Optional[list[str]] = Field(None, max_length=10)
     
     model_config = ConfigDict(
@@ -140,7 +177,6 @@ class NoteUpdate(BaseModel):
     @field_validator("tags", mode="before")
     @classmethod
     def validate_tags(cls, v):
-        # Validiert die Tags fuer das Update-Schema, falls vorhanden
         if v is None:
             return None
         if not isinstance(v, list):
@@ -159,21 +195,34 @@ class NoteUpdate(BaseModel):
             except ValueError as e:
                 raise ValueError(f"Invalid tag '{tag}': {str(e)}")
         return validated_tags
+
+    @field_validator("category")
+    @classmethod
+    def normalize_category(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return v.strip().lower()
         
     @model_validator(mode="after")
     def validate_work_category_requires_work_tag(self):
-        # Cross-Field-Validation: 'work'-Kategorie erfordert zwingend den 'work'-Tag
+        """
+        Cross-Field-Validation: Falls Kategorie 'work' ist, muss auch das Tag 'work' existieren.
+        """
         if self.category == "work" and self.tags is not None and "work" not in self.tags:
             raise ValueError("work notes must include the 'work' tag")
         return self
 
 
 class NoteResponse(BaseModel):
-    # Schema fuer die API-Antworten
+    """
+    Einheitliches API-Ausgabe-Schema. Garantiert saubere JSON-Strukturen im Frontend.
+    """
     id: int
     title: str
     content: str
     category: str
+    priority: int
+    author_email: Optional[str]
     tags: list[str]
     created_at: str
     
@@ -184,36 +233,57 @@ class NoteResponse(BaseModel):
 # =========================================================================
 
 app = FastAPI(
-    title="Note Taking API",
-    description="Einfache, hochgradig validierte Notizenverwaltung mit SQLite-Backend",
-    version="1.0.0"
+    title="Ilia Beliaev - University API",
+    description="Zentrales Repository fuer Applied Programming. Absolut sicher mit Pydantic v2 & SQLite SQLModel Backend.",
+    version="7.0.0"
 )
 
-# --- BASIS ROUTEN (Tag 1) ---
+# --- BASISROUTEN & MATHEMATISCHE BERECHNUNGEN (Tag 1) ---
 
 @app.get("/")
-def root():
-    # Einfacher Hello-World-Willkommensendpunkt
-    return {"message": "Hello, World!"}
-
-@app.get("/name/{name}")
-def greet_name(name: str):
-    # Gibt den uebergebenen Namen im JSON-Format zurueck
-    return {"message": f"Hello, {name}!"}
-
-@app.get("/calculate/{number}")
-def calculate(number: float):
-    # Fuehrt eine einfache mathematische Berechnung aus
-    result = number * 2 + 5
-    return {"message": f"Der verrechnete Wert von {number} ist {result}"}
+def read_root():
+    return {"message": "Hello World!"}
 
 
-# --- CRUD OPERATIONEN (Tag 2 & Tag 3) ---
+@app.get("/status")
+def get_status():
+    return {"status": "online", "version": "7.0.0", "day": 7}
+
+
+@app.get("/about")
+def get_about():
+    return {"project": "University API", "author": "Ilia Beliaev", "course": "Applied Programming"}
+
+
+@app.get("/student")
+def get_student():
+    """
+    Gibt die Profildaten des Studierenden aus (Anforderung Tag 1 / Klausurrelevat).
+    """
+    return {"name": "Ilia Beliaev", "course": "Applied Programming", "university": "TH Coburg"}
+
+
+@app.get("/square/{number}")
+def calculate_square(number: int):
+    return {"number": number, "square": number * number}
+
+
+@app.get("/double/{number}")
+def calculate_double(number: int):
+    return {"number": number, "double": number * 2}
+
+
+# --- REST CRUD OPERATIONEN FÜR NOTIZEN (Tag 2, 3, 4) ---
 
 @app.post("/notes", status_code=201)
 def create_note(note: NoteCreate, session: SessionDep) -> NoteResponse:
-    # Erstellt eine neue Notiz in der Datenbank und verknuepft Tags
-    db_note = Note(title=note.title, content=note.content, category=note.category)
+    """
+    Erstellt eine neue Notiz. Verknuepft oder generiert dabei dynamisch Tags.
+    """
+    db_note = Note(
+        title=note.title, content=note.content, category=note.category,
+        priority=note.priority, author_email=note.author_email
+    )
     
     tag_objects = []
     for tag_name in note.tags:
@@ -234,6 +304,7 @@ def create_note(note: NoteCreate, session: SessionDep) -> NoteResponse:
     
     return NoteResponse(
         id=db_note.id, title=db_note.title, content=db_note.content, category=db_note.category,
+        priority=db_note.priority, author_email=db_note.author_email,
         tags=[t.name for t in db_note.tags], created_at=db_note.created_at.isoformat()
     )
 
@@ -247,11 +318,13 @@ def list_notes(
     created_after: Optional[str] = None,
     created_before: Optional[str] = None,
 ) -> list[NoteResponse]:
-    # Gibt alle Notizen aus. Filter fuer Kategorie, Suche, Tags und Datum sind optional kombinierbar.
+    """
+    Listet Notizen auf. Unterstuetzt kombinierbare Filter fuer Kategorie, Tags, Volltextsuche und Erstellungszeitraum.
+    """
     statement = select(Note)
     
     if category:
-        statement = statement.where(Note.category == category)
+        statement = statement.where(Note.category == category.lower())
     
     if search:
         search_lower = search.lower()
@@ -263,8 +336,7 @@ def list_notes(
         )
     
     if tag:
-        tag_lower = tag.lower()
-        statement = statement.join(Note.tags).where(Tag.name == tag_lower)
+        statement = statement.join(Note.tags).where(Tag.name == tag.lower())
 
     if created_after:
         created_after_dt = parse_iso_datetime(created_after, "created_after")
@@ -279,6 +351,7 @@ def list_notes(
     return [
         NoteResponse(
             id=n.id, title=n.title, content=n.content, category=n.category,
+            priority=n.priority, author_email=n.author_email,
             tags=[t.name for t in n.tags], created_at=n.created_at.isoformat()
         ) for n in notes
     ]
@@ -286,19 +359,21 @@ def list_notes(
 
 @app.get("/notes/{note_id}")
 def get_note(note_id: int, session: SessionDep) -> NoteResponse:
-    # Ruft eine spezifische Notiz anhand ihrer ID ab
     note = session.get(Note, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
     return NoteResponse(
         id=note.id, title=note.title, content=note.content, category=note.category,
+        priority=note.priority, author_email=note.author_email,
         tags=[t.name for t in note.tags], created_at=note.created_at.isoformat()
     )
 
 
 @app.put("/notes/{note_id}")
 def update_note(note_id: int, note_update: NoteCreate, session: SessionDep) -> NoteResponse:
-    # Aktualisiert eine vorhandene Notiz vollstaendig (PUT)
+    """
+    Vollstaendiges Ueberschreiben einer bestehenden Notiz (PUT).
+    """
     note = session.get(Note, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -306,6 +381,8 @@ def update_note(note_id: int, note_update: NoteCreate, session: SessionDep) -> N
     note.title = note_update.title
     note.content = note_update.content
     note.category = note_update.category
+    note.priority = note_update.priority
+    note.author_email = note_update.author_email
 
     tag_objects = []
     for tag_name in note_update.tags:
@@ -325,13 +402,16 @@ def update_note(note_id: int, note_update: NoteCreate, session: SessionDep) -> N
     
     return NoteResponse(
         id=note.id, title=note.title, content=note.content, category=note.category,
+        priority=note.priority, author_email=note.author_email,
         tags=[t.name for t in note.tags], created_at=note.created_at.isoformat()
     )
 
 
 @app.patch("/notes/{note_id}")
 def partial_update_note(note_id: int, note_update: NoteUpdate, session: SessionDep) -> NoteResponse:
-    # Aktualisiert eine Notiz teilweise (PATCH)
+    """
+    Teilweises Aktualisieren einer Notiz (PATCH). Unveraenderte Felder werden beibehalten.
+    """
     note = session.get(Note, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -362,13 +442,13 @@ def partial_update_note(note_id: int, note_update: NoteUpdate, session: SessionD
 
     return NoteResponse(
         id=note.id, title=note.title, content=note.content, category=note.category,
+        priority=note.priority, author_email=note.author_email,
         tags=[t.name for t in note.tags], created_at=note.created_at.isoformat()
     )
 
 
 @app.delete("/notes/{note_id}", status_code=204)
 def delete_note(note_id: int, session: SessionDep):
-    # Loescht eine Notiz permanent aus der Datenbank
     note = session.get(Note, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
@@ -377,74 +457,40 @@ def delete_note(note_id: int, session: SessionDep):
     return Response(status_code=204)
 
 
-# --- META & STATISTIK ENDPUNKTE ---
+# --- STATISTIKEN & META-ENDPUNKTE (Tag 3, 5) ---
 
 @app.get("/notes/stats")
 def get_notes_stats(session: SessionDep):
-    # Berechnet globale Metadaten (Gesamtanzahl, Kategorien-Verteilung, Top 5 Tags)
+    """
+    Aggregiert globale Statistiken fuer das Streamlit-Dashboard (Gesamtanzahl, Kategorien, Top 5 Tags).
+    """
     notes = session.exec(select(Note)).all()
-
-    categories: dict[str, int] = {}
-    tag_counts: dict[str, int] = {}
-
-    for note in notes:
-        categories[note.category] = categories.get(note.category, 0) + 1
-        for tag in note.tags:
-            tag_counts[tag.name] = tag_counts.get(tag.name, 0) + 1
-
-    top_tags = [
-        {"tag": tag, "count": count}
-        for tag, count in sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
-    ][:5]
-
+    categories = {}
+    all_tags_list = []
+    
+    for n in notes:
+        categories[n.category] = categories.get(n.category, 0) + 1
+        for t in n.tags:
+            all_tags_list.append(t.name)
+            
+    tag_counts = Counter(all_tags_list)
     unique_tags_count = len(session.exec(select(Tag)).all())
 
     return {
         "total_notes": len(notes),
         "by_category": categories,
-        "top_tags": top_tags,
+        "top_tags": [{"tag": tag, "count": count} for tag, count in tag_counts.most_common(5)],
         "unique_tags_count": unique_tags_count
     }
 
 
 @app.get("/tags")
 def list_tags(session: SessionDep) -> list[str]:
-    # Listet alle verfuegbaren Tags alphabetisch sortiert auf
     tags = session.exec(select(Tag)).all()
     return sorted([tag.name for tag in tags])
 
 
-@app.get("/tags/{tag_name}/notes")
-def get_notes_by_tag(tag_name: str, session: SessionDep) -> list[NoteResponse]:
-    # Gibt alle Notizen zurueck, die einen bestimmten Tag besitzen
-    tag_lower = tag_name.lower()
-    tag = session.exec(select(Tag).where(Tag.name == tag_lower)).first()
-    
-    if not tag:
-        return []
-    
-    return [
-        NoteResponse(
-            id=note.id, title=note.title, content=note.content, category=note.category,
-            tags=[t.name for t in note.tags], created_at=note.created_at.isoformat()
-        ) for note in tag.notes
-    ]
-
-
 @app.get("/categories")
 def list_categories(session: SessionDep) -> list[str]:
-    # Listet alle aktuell verwendeten Kategorien ohne Duplikate auf
     categories = session.exec(select(Note.category).distinct()).all()
     return sorted(categories)
-
-
-@app.get("/categories/{category_name}/notes")
-def get_notes_by_category(category_name: str, session: SessionDep) -> list[NoteResponse]:
-    # Gibt alle Notizen einer bestimmten Kategorie zurueck
-    notes = session.exec(select(Note).where(Note.category == category_name)).all()
-    return [
-        NoteResponse(
-            id=note.id, title=note.title, content=note.content, category=note.category,
-            tags=[t.name for t in note.tags], created_at=note.created_at.isoformat()
-        ) for note in notes
-    ]
