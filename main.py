@@ -34,10 +34,10 @@ def calculate_square(number: int):
 @app.get("/student")
 def get_student():
     return {
-        "name": "ТВОЕ ИМЯ",         # <-- ПОМЕНЯЙ ЗДЕСЬ
+        "name": "Ilia Beliaev",
         "semester": 1, 
-        "course": "Wirtschaftsinformatik",
-        "university": "ТВОЙ УНИК"    # <-- ПОМЕНЯЙ ЗДЕСЬ
+        "course": "Wirtschaftsinformatik", 
+        "university": "TH Coburg"
     }
 
 @app.get("/double/{number}")
