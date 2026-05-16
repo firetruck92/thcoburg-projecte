@@ -1,6 +1,6 @@
 # Work Log
 
-**Student Name:** 
+**Student Name:Ilia Beliaev** 
 
 Instructions: Fill out one log for each course day. Content to consider: Course Sessions + Assignment
 
