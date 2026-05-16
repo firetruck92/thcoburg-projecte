@@ -1,8 +1,3 @@
-Всё, я понял, в чём дело! Из-за того, что я использую блоки кода (три обратные кавычки ```), твой мессенджер или редактор пытается форматировать их отдельно, и при копировании всё разлетается.
-
-Давай уберём вообще любое программное форматирование. Никаких рамок, никаких блоков кода, никаких спецсимволов. Просто чистый, голый текст сверху вниз, как в обычном Блокноте.
-
-Выдели весь текст ниже обычным курсором мышки от начала до конца, скопируй и вставь в свой файл:
 University Note-Taking API and Interactive Frontend
 
 Ein robustes, voll funktionsfaehiges Notiz-Verwaltungssystem, entwickelt im Rahmen des Kurses Applied Programming an der TH Coburg. Das Projekt kombiniert ein hochgradig validiertes FastAPI-Backend mit einer persistenten SQLite-Datenbank und einer reaktiven Benutzeroberflaeche auf Streamlit-Basis.
@@ -37,14 +32,15 @@ Frontend (Streamlit Web-UI)
 
     Sichere Formular-Uebertragung: Nutzung von st.form, um Eingaben zu buendeln und gesammelt per POST-Request an das Backend zu uebergeben.
 
-## Installation und Setup
+Installation und Setup
+Voraussetzungen
 
-### Voraussetzungen
-- Python 3.13+
-- Installed uv Package Manager (empfohlen für das Kurs-Umfeld)
+    Python 3.13+
 
-### Repository synchronisieren
-```bash
+    Installed uv Package Manager
+
+Repository synchronisieren
+
 cd appliedprogrammingproject
 uv sync
 Anwendung starten
@@ -73,7 +69,7 @@ API-Endpunkt-Uebersicht
 
     GET /about - Projekt- und Autoren-Informationen
 
-    GET /student - Profildaten des Studierenden (Daria Yeromina)
+    GET /student - Profildaten des Studierenden (Dein Name)
 
     GET /square/{number} - Mathematische Berechnung: Quadratzahl
 
@@ -127,4 +123,4 @@ Technologie-Stack
 
     Frontend-GUI: Streamlit
 
-    Paketmanagement: uv (Astral)
+    Paketmanagement: uv
