@@ -30,7 +30,7 @@ Ein robustes, voll funktionsfähiges Notiz-Verwaltungssystem, entwickelt im Rahm
 - Installed uv Package Manager (empfohlen für das Kurs-Umfeld)
 
 ### Repository synchronisieren
-```bash
+
 cd appliedprogrammingproject
 uv sync
 
@@ -64,7 +64,7 @@ API-Endpunkt-Übersicht
 
     GET /about - Projekt- und Autoren-Informationen
 
-    GET /student - Profildaten des Studierenden (Daria Yeromina)
+    GET /student - Profildaten des Studierenden
 
     GET /square/{number} - Mathematische Berechnung: Quadratzahl
 
