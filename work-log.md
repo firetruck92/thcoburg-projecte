@@ -90,29 +90,36 @@ Danach lief der Commit sofort ohne Probleme durch.
 
 #### 1. ✅ What did I accomplish?
 
+Konzepte: Datentypen in Python vertieft sowie den Unterschied zwischen HTTP GET (Daten abrufen) und HTTP POST (Daten senden) gelernt. Das Prinzip der Daten-Persistenz verstanden.
 
+Tools: Eine .gitignore-Datei für Python-Projekte eingerichtet, um temporäre Dateien vom Git-Tracking auszuschließen.
 
+Code: Das API aus der Vorlesung um drei Hausaufgaben-Features erweitert:
 
+    Das Datenmodell (Pydantic) angepasst: Jede Notiz besitzt nun das Pflichtfeld category.
 
+    Filter-Endpunkt gebaut: /notes/category/{category} gibt gezielt Notizen einer bestimmten Kategorie aus.
+
+    Statistik-Endpunkt gebaut: /notes/stats liefert die Gesamtzahl der Notizen sowie die Verteilung pro Kategorie.
+
+Persistenz: Die Notizen werden permanent in einer lokalen JSON-Datei (data/notes.json) gespeichert und bleiben auch nach einem Server-Neustart erhalten.
 
 ---
 
 #### 2. 🚧 What challenges did I face?
 
+JSON-Serialisierung: Beim ersten Versuch, die Notizen in die Datei zu schreiben, traten Fehler auf. Pydantic-Modellobjekte können von der Standardbibliothek json.dump() nicht direkt verarbeitet werden, da sie keine nativen Python-Dictionaries sind.
 
-
-
-
+Ordnerstruktur: Es gab anfangs Probleme beim automatischen Erstellen des data/-Verzeichnisses, wenn die JSON-Datei noch nicht existierte.
 
 ---
 
 #### 3. 💡 How did I overcome them?
+Datentyp-Konvertierung: Das Problem wurde durch die Verwendung der Methode .model_dump() gelöst. Damit werden die Pydantic-Objekte vor dem Speichern in reguläre Python-Dictionaries umgewandelt.
 
+Pfad-Erstellung: Mit Path("data/notes.json").parent.mkdir(parents=True, exist_ok=True) wurde sichergestellt, dass der übergeordnete Ordner vor dem Schreibvorgang automatisch generiert wird.
 
-
-
-
-
+Offene Frage: Wie kann man bestehende Einträge im JSON-File über ein HTTP PUT- oder DELETE-Request nachträglich modifizieren oder komplett entfernen?
 ---
 
 ### Day 3
