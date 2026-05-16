@@ -30,7 +30,7 @@ Ein robustes, voll funktionsfaehiges Notiz-Verwaltungssystem, entwickelt im Rahm
 - Installed uv Package Manager
 
 ### Repository synchronisieren
-cd appliedprogrammingproject
+cd thcoburg-projecte
 uv sync
 
 ## Anwendung starten
