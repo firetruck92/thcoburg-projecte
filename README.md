@@ -37,15 +37,14 @@ Frontend (Streamlit Web-UI)
 
     Sichere Formular-Uebertragung: Nutzung von st.form, um Eingaben zu buendeln und gesammelt per POST-Request an das Backend zu uebergeben.
 
-Installation und Setup
-Voraussetzungen
+## Installation und Setup
 
-    Python 3.13+
+### Voraussetzungen
+- Python 3.13+
+- Installed uv Package Manager (empfohlen für das Kurs-Umfeld)
 
-    Installed uv Package Manager
-
-Repository synchronisieren
-
+### Repository synchronisieren
+```bash
 cd appliedprogrammingproject
 uv sync
 Anwendung starten
@@ -74,7 +73,7 @@ API-Endpunkt-Uebersicht
 
     GET /about - Projekt- und Autoren-Informationen
 
-    GET /student - Profildaten des Studierenden (Dein Name)
+    GET /student - Profildaten des Studierenden (Daria Yeromina)
 
     GET /square/{number} - Mathematische Berechnung: Quadratzahl
 
@@ -128,4 +127,4 @@ Technologie-Stack
 
     Frontend-GUI: Streamlit
 
-    Paketmanagement: uv
+    Paketmanagement: uv (Astral)
