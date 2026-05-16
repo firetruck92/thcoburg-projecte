@@ -163,105 +163,70 @@ Integrierte Module: Die Aggregation der am häufigsten genutzten Tags im Statist
 ### Day 4
 
 #### 1. ✅ What did I accomplish?
+- **Konzepte:** Das Zusammenspiel zwischen HTTP-POST-Anfragen, Request-Bodies und automatischer Datenvalidierung vertieft. Gelernt, wie man fehlerhafte Eingaben direkt an der API-Schnittstelle abfängt.
+- **Pydantic Field Constraints:** Die ersten expliziten Validierungsregeln mithilfe von Pydantic `Field(...)` implementiert. Constraints wie `min_length` und `max_length` wurden für die Felder `title`, `content` und `category` definiert, um die Konsistenz der Datenbasis zu sichern.
+- **Einführung in pytest:** Erste automatisierte Unittests mit `pytest` geschrieben. Dabei das fundamentale Prinzip "Arrange-Act-Assert" angewendet, um sowohl erfolgreiche Abläufe (201 Created) als auch Validierungsfehler (422 Unprocessable Entity) strukturiert zu prüfen.
 
 ---
-
 #### 2. 🚧 What challenges did I face?
+- **Test-Isolierung:** Beim Testen von POST-Endpoints veränderten die Testläufe die echten persistenten Daten, was zu Seiteneffekten bei aufeinanderfolgenden Testausführungen führte.
+- **Fehlermeldungen interpretieren:** Die verschachtelte Struktur der von FastAPI automatisch generierten 422-Validierungsfehler im JSON-Format war anfangs schwer zu analysieren.
 
 ---
-
 #### 3. 💡 How did I overcome them?
-
----
+- **Bereinigung der Testumgebung:** Für die Testläufe wurde eine temporäre Logik bzw. Bereinigung integriert, um sicherzustellen, dass die Tests reproduzierbar bleiben und die produktive Datenbasis nicht korrumpieren.
+- **Dokumentationsanalyse:** Durch intensives Testen der Endpunkte in der interaktiven Swagger-UI (`/docs`) konnten die Pydantic-Fehlermeldungen Schritt für Schritt nachvollzogen und im Testcode präzise per Assertions überprüft werden. 
 
 ### Day 5
 
 #### 1. ✅ What did I accomplish?
-
-
-
-
-
+- **Konzepte:** Das Prinzip der tiefgehenden, datenzentrierten Validierung verstanden. Komplexe Geschäftsregeln (Cross-Field Validation) wurden direkt in die Pydantic-Modelle ausgelagert, um den Endpoint-Code schlank und wartbar zu halten.
+- **Modell-Absicherung (Core Hardening):** Die Datensicherheit durch Konfiguration des `ConfigDict` maximiert. Mittels `extra="forbid"` werden nicht deklarierte Felder in Requests strikt blockiert. Dank `str_strip_whitespace=True` werden führende und nachstehende Leerzeichen automatisch entfernt.
+- **Erweiterte Validatoren:** Custom `@field_validator`-Funktionen zur automatischen String-Normalisierung (Kategorien werden immer in Kleinbuchstaben umgewandelt) und zur case-insensitiven Deduplizierung von Tags implementiert. Zudem einen `@model_validator(mode="after")` hinzugefügt, um zu verhindern, dass Titel und Inhalt identisch sind.
+- **Stretch Goals:** Die Modelle um fortgeschrittene Datentypen erweitert: Einbindung des Typs `EmailStr` für ein optionales `author_email`-Feld sowie numerische Wertebereichsüberwachung (`ge=1, le=5`) für das Feld `priority`.
 
 ---
-
 #### 2. 🚧 What challenges did I face?
-
-
-
-
-
+- **Datenbank-Migration:** Durch das Hinzufügen der neuen Pflichtfelder aus den Stretch Goals (`priority` und `author_email`) kam es zu Inkompatibilitäten mit der bestehenden SQLite-Struktur, da alte Tabelleneinträge diese Spalten nicht besaßen.
 
 ---
-
 #### 3. 💡 How did I overcome them?
-
-
-
-
-
-
----
+- **Schema-Reset:** Die lokale Datenbankdatei `notes.db` wurde manuell gelöscht. Beim anschließenden Neustart des FastAPI-Servers generierte SQLModel das Datenbankschema mitsamt allen neuen Feldern, Validierungen und Tabellenbeziehungen komplett neu und fehlerfrei.
 
 ### Day 6
 
 #### 1. ✅ What did I accomplish?
-
-
-
-
-
+- **Konzepte:** Die fundamentale Bedeutung von umfassenden Regressionstests in echten Softwareprojekten verstanden. Tests sichern ab, dass tiefgreifende Refactorings am Backend keine bestehenden API-Funktionalitäten unbemerkt zerstören.
+- **Integration der Test-Suite:** Die offizielle, von der Kursleitung bereitgestellte Test-Suite erfolgreich in das Projektverzeichnis integriert und via Pytest ausgeführt.
+- **Code-Refactoring:** Das gesamte Backend (`main.py`) und die zugrundeliegenden Pydantic-Modelle akribisch optimiert und angepasst, bis alle vordefinierten, strengen Testfälle der externen Suite fehlerfrei durchliefen.
+- **Robustheit:** Die API garantiert nun auch unter extremen Testbedingungen (Edge Cases, ungültige Datentypen, SQL-Grenzwerte) exakt die erwarteten HTTP-Statuscodes (200, 201, 404, 422).
 
 ---
-
 #### 2. 🚧 What challenges did I face?
-
-
-
-
-
+- **Strikte Vorgaben:** Einige Testfälle der offiziellen Suite erwarteten hochspezifische Feldbezeichnungen, exakte Verschachtelungen und exaktes Verhalten bei unzulässigen Extra-Feldern, was anfangs zu zahlreichen fehlschlagenden Assertions führte.
 
 ---
-
 #### 3. 💡 How did I overcome them?
-
-
-
-
-
-
----
+- **Gezielte Fehleranalyse:** Die Testausführung wurde mit detaillierten Flags (`pytest -v`) analysiert. Durch das systematische Abarbeiten der Fehlermeldungen wurden kleine Abweichungen im Validierungsprozess des Backends korrigiert (z. B. exakte Einhaltung der Lowercase-Logik), bis die gesamte Test-Suite vollständig "grün" war.
 
 ## Week 3
 
-### Day 7
-
 #### 1. ✅ What did I accomplish?
-
-
-
-
-
+- **Konzepte:** Das Client-Server-Modell und die Entkopplung von Backend (FastAPI REST-API) und Frontend (Benutzeroberfläche) in einer realen Systemarchitektur verstanden. Die Kommunikation erfolgt sauber über asynchrone HTTP-Requests mittels der `requests`-Bibliothek.
+- **UI-Entwicklung mit Streamlit:** Das Streamlit-Framework erlernt und genutzt, um schnell und effizient reaktive Web-Applikationen direkt in Python zu bauen.
+- **Frontend-Features:** Eine vollständige Web-Oberfläche (`frontend.py`) implementiert, die zwei Hauptfunktionen erfüllt:
+  - **Funktion 1 (Read):** Dynamisches Abrufen aller Notizen aus der SQLite-Datenbank und übersichtliche Darstellung der Inhalte, Tags, E-Mails und Sterne-Prioritäten in interaktiven Akkordeon-Komponenten (`st.expander`).
+  - **Funktion 2 (Create):** Ein sicheres Eingabeformular (`st.form`), das Eingaben (Titel, Inhalt, Kategorie, Priorität, E-Mail, Tags) bündelt, validiert und gesammelt per POST-Request an das Backend übermittelt.
 
 ---
-
 #### 2. 🚧 What challenges did I face?
-
-
-
-
-
+- **Asynchroner UI-Zustand:** Nach dem erfolgreichen Absenden des Formulars wurden neu angelegte Notizen in der linken Spalte nicht sofort angezeigt, da Streamlit die Ansicht nicht automatisch aktualisierte.
+- **Verbindungsstabilität:** Wenn das FastAPI-Backend während der Frontend-Nutzung gestoppt wurde, stürzte die Streamlit-App mit einem unschönen, kritischen Python-Traceback ab.
 
 ---
-
 #### 3. 💡 How did I overcome them?
-
-
-
-
-
-
----
+- **State-Refresh:** Durch den gezielten Einsatz von `st.rerun()` unmittelbar nach dem Erhalt des Erfolgs-Statuscodes `201 Created` vom Server wurde ein sofortiges Neuladen der UI erzwungen.
+- **Robustes Error Handling:** Die HTTP-Anfragen wurden in `try-except`-Blöcke verpackt (`requests.exceptions.ConnectionError`). Statt eines Absturzes zeigt das Frontend dem Benutzer nun eine benutzerfreundliche Warnmeldung an, dass der Backend-Server gestartet werden muss.
 
 ### Day 8
 
