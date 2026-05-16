@@ -125,30 +125,37 @@ Offene Frage: Wie kann man bestehende Einträge im JSON-File über ein HTTP PUT-
 ### Day 3
 
 #### 1. ✅ What did I accomplish?
+Konzepte: Das REST-Architekturkonzept (Ressourcenorientierung, semantische Nutzung von HTTP-Methoden und korrekte Statuscodes) verstanden und umgesetzt. Den Unterschied zwischen Pfad-Parametern zur Ressourcenidentifikation und Query-Parametern zur Filterung gelernt.
 
+Datenbank-Migration: Das Speichersystem komplett von unzuverlässigen JSON-Dateien auf eine relationale SQLite-Datenbank unter Verwendung von SQLModel (Kombination aus Pydantic und SQLAlchemy) umgestellt.
 
+Code & CRUD-Ausbau: Die API zu einem vollständigen CRUD-System erweitert:
 
+    PUT /notes/{id} für den vollständigen Austausch einer Notiz.
 
+    PATCH /notes/{id} für partielle, feldspezifische Updates von Attributen.
 
+    DELETE /notes/{id} mit dem Statuscode 204 No Content zum dauerhaften Löschen.
 
+Beziehungen & Filter: Eine Many-to-Many-Beziehung für flexible tags über eine Verknüpfungstabelle implementiert. Dedizierte relationale Endpunkte wie /tags/{name}/notes und /categories/{name}/notes hinzugefügt.
+
+Advanced Features: Komplexe kombinierte Filterung, ISO-basierte Datumsbereichsfilter (created_after/created_before) sowie eine erweiterte Statistik über Pythons collections.Counter-Modul zur Ermittlung der Top-5-Tags integriert.
 ---
 
 #### 2. 🚧 What challenges did I face?
+Many-to-Many-Beziehungen: Das Aufsetzen der Verknüpfungstabelle (NoteTagLink) in SQLModel und das Auflösen von zirkulären Abhängigkeiten bei der Datenausgabe waren anfangs komplex zu strukturieren.
 
+Datenbank-Sitzungen: Verständnisprobleme bei der korrekten Weitergabe und Schließung der Datenbanksitzung (SessionDep) via Dependency Injection an die einzelnen Endpunkte.
 
-
-
-
-
+Typkonvertierung bei der API-Antwort: SQLModel-Objekte ließen sich aufgrund geladener Beziehungsdaten nicht direkt serialisieren, was zu Fehlern bei der JSON-Rückgabe führte.
 ---
 
 #### 3. 💡 How did I overcome them?
+Link-Modell-Definition: Die Tabellenstruktur wurde exakt nach der SQLModel-Dokumentation mit link_model=NoteTagLink definiert, was die M2M-Tabelle im Hintergrund fehlerfrei generiert.
 
+Dediizierte Response-Modelle: Zur sauberen Trennung von Datenbank- und API-Schicht wurden Pydantic-Response-Modelle (NoteResponse) definiert. Die Daten werden vor der Rückgabe explizit konvertiert, um Serialisierungsfehler zu vermeiden.
 
-
-
-
-
+Integrierte Module: Die Aggregation der am häufigsten genutzten Tags im Statistik-Endpunkt wurde effizient über Pythons integriertes collections.Counter-Modul gelöst, statt eigene Sortieralgorithmen zu schreiben.
 ---
 
 ## Week 2
