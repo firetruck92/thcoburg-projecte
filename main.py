@@ -2,8 +2,6 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
-# --- ЭНДПОИНТЫ С ЗАНЯТИЯ ---
-
 @app.get("/")
 def read_root():
     return {"message": "Hello World!"}
@@ -24,9 +22,6 @@ def get_about():
         "course": "Applied Programming"
     }
 
-# --- ДОМАШНЕЕ ЗАДАНИЕ (3 НОВЫХ ЭНДПОИНТА) ---
-
-# Задача 1: Квадрат числа
 @app.get("/square/{number}")
 def calculate_square(number: int):
     result = number * number
@@ -36,7 +31,6 @@ def calculate_square(number: int):
         "calculation": f"{number} x {number} = {result}"
     }
 
-# Задача 2: Информация о студенте
 @app.get("/student")
 def get_student():
     return {
@@ -46,7 +40,6 @@ def get_student():
         "university": "ТВОЙ УНИК"    # <-- ПОМЕНЯЙ ЗДЕСЬ
     }
 
-# Задача 3: Удвоение числа
 @app.get("/double/{number}")
 def calculate_double(number: int):
     result = number * 2
