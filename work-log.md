@@ -56,28 +56,33 @@ _Explain how you overcame the challenges or what help you needed._
 
 #### 1. ✅ What did I accomplish?
 
+Konzepte: Client-Server-Modell, HTTP-Requests, REST-APIs und JSON-Struktur gelernt.
 
+Tools: Git (Versionsverwaltung), VS Code (Editor) und uv (Package-Manager) eingerichtet.
 
+Code: Eine FastAPI-App mit 6 Endpunkten geschrieben:
 
+    Basis-Endpunkte: /, /status, /about.
 
+    Hausaufgabe: /square/{number}, /double/{number} und /student (Studentenprofil).
+
+Testen: Alle Endpunkte erfolgreich über die automatische Swagger-UI (/docs) getestet.
 
 ---
 
 #### 2. 🚧 What challenges did I face?
 
-
-
-
-
+Git-Konfiguration: Beim ersten Versuch zu committen, hat Git den Prozess abgebrochen, weil user.name und user.email im System noch nicht global hinterlegt waren.
 
 ---
 
 #### 3. 💡 How did I overcome them?
 
 
-
-
-
+Schneller Fix: Ich habe das Problem direkt über das Terminal mit zwei Befehlen gelöst:
+git config --global user.name "Mein Name"
+git config --global user.email "meine@email.com"
+Danach lief der Commit sofort ohne Probleme durch.
 
 ---
 
