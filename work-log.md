@@ -164,28 +164,13 @@ Integrierte Module: Die Aggregation der am häufigsten genutzten Tags im Statist
 
 #### 1. ✅ What did I accomplish?
 
-
-
-
-
-
 ---
 
 #### 2. 🚧 What challenges did I face?
 
-
-
-
-
-
 ---
 
 #### 3. 💡 How did I overcome them?
-
-
-
-
-
 
 ---
 
